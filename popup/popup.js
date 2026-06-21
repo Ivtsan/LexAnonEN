@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initButtons();
   initDictionary();
   initCustomCategories();
+  initLlmSettings();
   loadSettings();
 });
 
@@ -95,6 +96,14 @@ function loadSettings() {
     if (s.autoIntercept !== undefined) {
       $('auto-intercept').checked = s.autoIntercept;
     }
+
+    // LLM settings
+    if (s.llmEnabled !== undefined) {
+      $('llm-enabled').checked = s.llmEnabled;
+      $s('llm-fields', s.llmEnabled);
+    }
+    if (s.llmServerUrl) $('llm-url').value = s.llmServerUrl;
+    if (s.llmModel)     $('llm-model').value = s.llmModel;
   });
 }
 
@@ -103,6 +112,9 @@ function saveSettings() {
     enabledCategories: getEnabledCategories(),
     mode:              getSelectedMode(),
     autoIntercept:     $('auto-intercept').checked,
+    llmEnabled:        $('llm-enabled').checked,
+    llmServerUrl:      $('llm-url').value.trim(),
+    llmModel:          $('llm-model').value.trim(),
   };
   chrome.storage.local.set({ [STORAGE_KEY]: s });
 }
@@ -209,6 +221,9 @@ async function handleFile(file) {
       language:          'en',
       exclusionWords:    dictWords,
       customCategories:  customCategories,
+      llmEnabled:        $('llm-enabled').checked,
+      llmServerUrl:      $('llm-url').value.trim(),
+      llmModel:          $('llm-model').value.trim(),
     },
   });
 }
@@ -782,6 +797,123 @@ function resetToIdle() {
   $('btn-download').disabled = false;
   setProgress(0, '');
   setState('idle');
+}
+
+// ---------------------------------------------------------------------------
+// LLM settings
+// ---------------------------------------------------------------------------
+function initLlmSettings() {
+  $('llm-enabled').addEventListener('change', (e) => {
+    $s('llm-fields', e.target.checked);
+    saveSettings();
+  });
+
+  $('llm-url').addEventListener('change', saveSettings);
+  $('llm-model').addEventListener('change', saveSettings);
+
+  $('llm-test').addEventListener('click', async () => {
+    const url = $('llm-url').value.trim();
+    if (!url) { setLlmStatus('error', 'Enter a server URL'); return; }
+
+    try { new URL(url); } catch {
+      setLlmStatus('error', 'Invalid URL format');
+      return;
+    }
+
+    setLlmStatus('testing', 'Connecting…');
+
+    try {
+      const resp = await fetch(url.replace(/\/+$/, '') + '/api/tags', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!resp.ok) {
+        setLlmStatus('error', 'Server returned ' + resp.status);
+        return;
+      }
+      const data = await resp.json();
+      const models = (data.models || []).map(m => m.name || m.model).filter(Boolean);
+      if (models.length === 0) {
+        setLlmStatus('warn', 'Connected but no models found. Run: ollama pull <model>');
+      } else {
+        setLlmStatus('ok', 'Connected — ' + models.length + ' model(s) available');
+      }
+    } catch (err) {
+      setLlmStatus('error', 'Connection failed: ' + (err.message || err));
+    }
+  });
+
+  $('llm-fetch-models').addEventListener('click', async () => {
+    const url = $('llm-url').value.trim();
+    if (!url) { setLlmStatus('error', 'Enter a server URL first'); return; }
+
+    try { new URL(url); } catch {
+      setLlmStatus('error', 'Invalid URL format');
+      return;
+    }
+
+    setLlmStatus('testing', 'Fetching models…');
+
+    try {
+      const resp = await fetch(url.replace(/\/+$/, '') + '/api/tags', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!resp.ok) {
+        setLlmStatus('error', 'Server returned ' + resp.status);
+        return;
+      }
+      const data = await resp.json();
+      const models = (data.models || []).map(m => m.name || m.model).filter(Boolean);
+
+      if (models.length === 0) {
+        setLlmStatus('warn', 'No models installed on server');
+        return;
+      }
+
+      // Update the model field — replace with select, or update existing select
+      const modelEl = $('llm-model');
+      const currentVal = modelEl.value.trim();
+      let select;
+
+      if (modelEl.tagName === 'SELECT') {
+        // Already a select from a previous fetch — clear and repopulate
+        select = modelEl;
+        select.innerHTML = '';
+      } else {
+        // First fetch — replace input with select
+        select = document.createElement('select');
+        select.id = 'llm-model';
+        select.className = 'dict-text-input';
+        select.addEventListener('change', saveSettings);
+        modelEl.removeEventListener('change', saveSettings);
+        modelEl.parentNode.replaceChild(select, modelEl);
+      }
+
+      for (const m of models) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        if (m === currentVal) opt.selected = true;
+        select.appendChild(opt);
+      }
+
+      if (!currentVal || models.indexOf(currentVal) === -1) {
+        select.value = models[0];
+      }
+
+      saveSettings();
+      setLlmStatus('ok', models.length + ' model(s) found');
+    } catch (err) {
+      setLlmStatus('error', 'Failed: ' + (err.message || err));
+    }
+  });
+}
+
+function setLlmStatus(type, text) {
+  const el = $('llm-status');
+  el.textContent = text;
+  el.className = 'llm-status llm-status-' + type;
 }
 
 // ---------------------------------------------------------------------------

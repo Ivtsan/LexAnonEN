@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Local anonymization of personal data in .docx files. File never leaves the browser.",
   "permissions": ["downloads", "storage"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -31,6 +32,7 @@
         "lib/entity-finder.js",
         "lib/replacer.js",
         "lib/docx-parser.js",
+        "lib/llm-enhancer.js",
         "worker/processor.js"
       ],
       "matches": ["<all_urls>"]

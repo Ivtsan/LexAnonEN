@@ -25,7 +25,7 @@
     </div>
     <div>
       <div class="header-title">LexAnon EN</div>
-      <div class="header-sub">Local · file never leaves the browser</div>
+      <div class="header-sub">Local · file never leaves your network</div>
     </div>
   </div>
   <div class="privacy-badge">
@@ -129,6 +129,40 @@
           </div>
         </div>
         <div id="custom-cat-list" class="custom-cat-list"></div>
+      </div>
+    </details>
+
+    <!-- LLM Enhancement -->
+    <details id="llm-panel" class="settings-panel">
+      <summary class="settings-toggle">LLM Enhancement</summary>
+      <div class="settings-body">
+        <div class="settings-section-label">Local LLM server (Ollama)</div>
+        <p class="llm-desc">Connect to your firm's internal LLM server to detect entities that regex rules miss. All data stays within your network.</p>
+
+        <label class="checkbox-row llm-enable-row">
+          <input type="checkbox" id="llm-enabled">
+          <span>Enable LLM-enhanced detection</span>
+        </label>
+
+        <div id="llm-fields" class="llm-fields hidden">
+          <div class="llm-field-row">
+            <label class="llm-label" for="llm-url">Server URL</label>
+            <input type="text" id="llm-url" class="dict-text-input" placeholder="http://llm-server.internal:11434" spellcheck="false">
+          </div>
+
+          <div class="llm-field-row">
+            <label class="llm-label" for="llm-model">Model</label>
+            <div class="llm-model-row">
+              <input type="text" id="llm-model" class="dict-text-input" placeholder="llama3.1:8b" spellcheck="false">
+              <button class="btn-ghost btn-sm" id="llm-fetch-models" title="Fetch available models from server">Fetch</button>
+            </div>
+          </div>
+
+          <div class="llm-status-row">
+            <button class="btn-ghost btn-sm" id="llm-test">Test connection</button>
+            <span class="llm-status" id="llm-status"></span>
+          </div>
+        </div>
       </div>
     </details>
 

@@ -18,7 +18,8 @@ importScripts(
   'lib/validators.js',
   'lib/entity-finder.js',
   'lib/replacer.js',
-  'lib/docx-parser.js'
+  'lib/docx-parser.js',
+  'lib/llm-enhancer.js'
 );
 
 // ─── Base64 ↔ Uint8Array ──────────────────────────────────────────────────────
@@ -63,21 +64,25 @@ async function handleParse({ data, filename, options }, port) {
 
   const uint8 = base64ToUint8(data);
   const { zip, parts } = await parseDocx(uint8);
-  prog(port, 30, 'Analysing structure…');
+  prog(port, 20, 'Analysing structure…');
 
   const enabledCategories = new Set(
     options.enabledCategories || Object.keys(CATEGORIES)
   );
+  const llmEnabled   = options.llmEnabled || false;
+  const llmServerUrl = options.llmServerUrl || '';
+  const llmModel     = options.llmModel || '';
 
   const allParas = getAllParagraphs(parts);
   const fullText = getFullDocumentText(parts);
 
-  prog(port, 40, 'Scanning for party details block…');
+  prog(port, 25, 'Scanning for party details block…');
   const { text: reqText } = detectRequisitesBlock(fullText);
   const kb = buildKnowledgeBase(reqText);
 
-  prog(port, 50, `Party details: ${kb.persons.length} persons, ${kb.companies.length} companies`);
+  prog(port, 30, `Party details: ${kb.persons.length} persons, ${kb.companies.length} companies`);
 
+  // ── Phase 1: Regex ──────────────────────────────────────────────────────
   const entities = [];
   let entityId   = 0;
   const total    = allParas.length;
@@ -101,9 +106,51 @@ async function handleParse({ data, filename, options }, port) {
     }
 
     if (i % 30 === 0) {
-      prog(port, 55 + Math.round((i / total) * 35), `Paragraphs: ${i + 1} / ${total}`);
+      prog(port, 35 + Math.round((i / total) * 20), `Regex: ${i + 1} / ${total}`);
     }
   }
+
+  prog(port, 55, `Regex found ${entities.length} entities`);
+
+  // ── Phase 2: LLM enhancement ───────────────────────────────────────────
+  if (llmEnabled && llmServerUrl && llmModel) {
+    prog(port, 58, 'LLM: connecting…');
+
+    const health = await llmHealthCheck(llmServerUrl);
+    if (health.ok) {
+      prog(port, 60, 'LLM: analysing document…');
+
+      const llmResult = await llmEnhanceEntities(
+        llmServerUrl,
+        llmModel,
+        allParas,
+        entities,
+        enabledCategories,
+        function (pct, msg) {
+          prog(port, 60 + Math.round(pct * 0.32), msg);
+        }
+      );
+
+      for (const llmEnt of llmResult.entities) {
+        llmEnt.id = String(++entityId);
+        entities.push(llmEnt);
+      }
+
+      var llmMsg = 'LLM found ' + llmResult.entities.length + ' additional entities';
+      if (llmResult.errors > 0) llmMsg += ' (' + llmResult.errors + ' chunks failed)';
+      prog(port, 93, llmMsg);
+    } else {
+      prog(port, 93, 'LLM unreachable — regex results only');
+    }
+  }
+
+  // Re-sort and reassign IDs
+  entities.sort(function (a, b) {
+    if (a.partName !== b.partName) return a.partName < b.partName ? -1 : 1;
+    if (a.paraIdx !== b.paraIdx) return a.paraIdx - b.paraIdx;
+    return a.start - b.start;
+  });
+  for (let i = 0; i < entities.length; i++) entities[i].id = String(i + 1);
 
   const r = new Replacer('placeholder');
   r.precompute(entities);

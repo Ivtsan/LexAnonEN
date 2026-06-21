@@ -19,7 +19,8 @@ importScripts(
   '../lib/validators.js',
   '../lib/entity-finder.js',
   '../lib/replacer.js',
-  '../lib/docx-parser.js'
+  '../lib/docx-parser.js',
+  '../lib/llm-enhancer.js'
 );
 
 // ---------------------------------------------------------------------------
@@ -45,11 +46,14 @@ async function handleParse({ buffer, filename, options }) {
   progress(5, 'Opening file…');
 
   const { zip, parts } = await parseDocx(buffer);
-  progress(30, 'Analysing document structure…');
+  progress(20, 'Analysing document structure…');
 
   const enabledCategories = new Set(options.enabledCategories || Object.keys(CATEGORIES));
   const exclusionSet      = new Set((options.exclusionWords || []).map(w => w.trim().toLowerCase()).filter(Boolean));
   const customCats        = options.customCategories || [];
+  const llmEnabled        = options.llmEnabled || false;
+  const llmServerUrl      = options.llmServerUrl || '';
+  const llmModel          = options.llmModel || '';
 
   // Register custom categories in CATEGORIES (needed by Replacer)
   for (const cat of customCats) {
@@ -64,18 +68,19 @@ async function handleParse({ buffer, filename, options }) {
   const allParas    = getAllParagraphs(parts);
   const fullDocText = getFullDocumentText(parts);
 
-  progress(40, 'Scanning for party details block…');
+  progress(25, 'Scanning for party details block…');
 
   const { text: reqText } = detectRequisitesBlock(fullDocText);
   const knowledgeBase     = buildKnowledgeBase(reqText);
 
-  progress(50, `Found ${knowledgeBase.persons.length} persons, ${knowledgeBase.companies.length} companies in party details`);
+  progress(30, `Found ${knowledgeBase.persons.length} persons, ${knowledgeBase.companies.length} companies in party details`);
 
   const entities = [];
   let entityId   = 0;
   const total    = allParas.length;
 
-  progress(55, 'Detecting entities…');
+  // ── Phase 1: Regex detection ──────────────────────────────────────────
+  progress(35, 'Regex: detecting entities…');
 
   for (let i = 0; i < allParas.length; i++) {
     const para = allParas[i];
@@ -106,9 +111,57 @@ async function handleParse({ buffer, filename, options }) {
     }
 
     if (i % 20 === 0) {
-      const pct = 55 + Math.round((i / total) * 35);
-      progress(pct, `Processed paragraphs: ${i + 1} / ${total}`);
+      const pct = 35 + Math.round((i / total) * 20);
+      progress(pct, `Regex: paragraphs ${i + 1} / ${total}`);
     }
+  }
+
+  progress(55, `Regex found ${entities.length} entities`);
+
+  // ── Phase 2: LLM enhancement (optional) ───────────────────────────────
+  if (llmEnabled && llmServerUrl && llmModel) {
+    progress(58, 'LLM: connecting to server…');
+
+    const health = await llmHealthCheck(llmServerUrl);
+    if (health.ok) {
+      progress(60, 'LLM: analysing document…');
+
+      const llmResult = await llmEnhanceEntities(
+        llmServerUrl,
+        llmModel,
+        allParas,
+        entities,
+        enabledCategories,
+        function (pct, msg) {
+          progress(60 + Math.round(pct * 0.32), msg);
+        }
+      );
+
+      // Filter exclusions and add to entities
+      for (const llmEnt of llmResult.entities) {
+        if (exclusionSet.has(llmEnt.value.trim().toLowerCase())) continue;
+        llmEnt.id = String(++entityId);
+        entities.push(llmEnt);
+      }
+
+      let llmMsg = 'LLM found ' + llmResult.entities.length + ' additional entities';
+      if (llmResult.errors > 0) llmMsg += ' (' + llmResult.errors + ' chunks failed)';
+      progress(93, llmMsg);
+    } else {
+      progress(93, 'LLM server unreachable — using regex results only');
+    }
+  }
+
+  // Re-sort by document order after merging
+  entities.sort(function (a, b) {
+    if (a.partName !== b.partName) return a.partName < b.partName ? -1 : 1;
+    if (a.paraIdx !== b.paraIdx) return a.paraIdx - b.paraIdx;
+    return a.start - b.start;
+  });
+
+  // Reassign sequential IDs
+  for (let i = 0; i < entities.length; i++) {
+    entities[i].id = String(i + 1);
   }
 
   // Pre-compute placeholders for preview

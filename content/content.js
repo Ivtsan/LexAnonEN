@@ -22,6 +22,9 @@ const DEFAULT_SETTINGS = {
     'PERSON', 'COMPANY', 'SSN', 'TAXID',
     'SWIFT', 'IBAN', 'EMAIL', 'PHONE', 'URL', 'ADDRESS',
   ],
+  llmEnabled:   false,
+  llmServerUrl: '',
+  llmModel:     '',
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -131,7 +134,12 @@ async function onFileChange(e) {
     type:    'PARSE',
     data:    uint8ToBase64(new Uint8Array(buffer)),
     filename: file.name,
-    options:  { enabledCategories: settings.enabledCategories },
+    options:  {
+      enabledCategories: settings.enabledCategories,
+      llmEnabled:        settings.llmEnabled,
+      llmServerUrl:      settings.llmServerUrl,
+      llmModel:          settings.llmModel,
+    },
   });
 }
 
