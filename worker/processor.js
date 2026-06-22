@@ -144,8 +144,8 @@ async function handleParse({ buffer, filename, options }) {
         entities.push(llmEnt);
       }
 
-      let llmMsg = 'LLM found ' + llmResult.entities.length + ' additional entities';
-      if (llmResult.errors > 0) llmMsg += ' (' + llmResult.errors + ' chunks failed)';
+      let llmMsg = `LLM found ${llmResult.entities.length} additional entities`;
+      if (llmResult.errors > 0) llmMsg += ` (${llmResult.errors} chunks failed)`;
       progress(93, llmMsg);
     } else {
       progress(93, 'LLM server unreachable — using regex results only');

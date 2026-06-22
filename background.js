@@ -136,8 +136,8 @@ async function handleParse({ data, filename, options }, port) {
         entities.push(llmEnt);
       }
 
-      var llmMsg = 'LLM found ' + llmResult.entities.length + ' additional entities';
-      if (llmResult.errors > 0) llmMsg += ' (' + llmResult.errors + ' chunks failed)';
+      let llmMsg = `LLM found ${llmResult.entities.length} additional entities`;
+      if (llmResult.errors > 0) llmMsg += ` (${llmResult.errors} chunks failed)`;
       prog(port, 93, llmMsg);
     } else {
       prog(port, 93, 'LLM unreachable — regex results only');
