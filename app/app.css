@@ -76,6 +76,12 @@ button.link {
 .card.narrow .banner { margin-top: 14px; margin-bottom: 0; }
 .card.narrow button.primary { width: 100%; margin-top: 6px; }
 
+#restore-job-filter {
+  width: 100%; margin: 10px 0 4px; padding: 8px 10px; font-size: 13.5px;
+  border: 1px solid var(--border); border-radius: 7px;
+}
+#restore-job-filter:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
 label.inline { font-size: 13px; color: var(--muted); margin-right: 10px; }
 select { padding: 7px 9px; font-size: 13px; border: 1px solid var(--border); border-radius: 7px; }
 

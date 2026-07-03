@@ -6,7 +6,7 @@
 
 import {
   getSettings, ping, pair, normalizeServerUrl, analyze, applyAndDownload,
-  identify, restorePlan, restoreApplyAndDownload,
+  listJobs, identify, restorePlan, restoreApplyAndDownload,
 } from "../lib/api.js";
 
 const $ = (id) => document.getElementById(id);
@@ -189,11 +189,12 @@ wireDropZone("anon-pick", "anon-file", startAnalyze);
 
 // ══ Restore flow ══════════════════════════════════════════════════════════
 
-let restoreState = null; // { file, jobId, plan }
+let restoreState = null; // { file, jobId, plan, jobs, selectedJobId }
 
 function restoreShow(step) {
   $("restore-pick").hidden = step !== "pick";
   $("restore-busy").hidden = step !== "busy";
+  $("restore-select").hidden = step !== "select";
   $("restore-review").hidden = step !== "review";
 }
 
@@ -208,6 +209,11 @@ function renderContext(occ) {
 function renderPlan(plan) {
   const warnings = $("restore-warnings");
   warnings.innerHTML = "";
+  if (plan.occurrences.length === 0) {
+    warnings.innerHTML +=
+      `<div class="banner error">No placeholders from this job were found in the document. ` +
+      `Either this is the wrong job, or the AI tool removed every placeholder. Nothing can be restored automatically.</div>`;
+  }
   if (plan.needsReview > 0) {
     warnings.innerHTML +=
       `<div class="banner warn">${plan.needsReview} match(es) are FUZZY — the AI tool altered those placeholders. ` +
@@ -244,27 +250,107 @@ function renderPlan(plan) {
   }
 }
 
+function renderJobList(jobs, filter, preselectedId) {
+  const tbody = $("restore-job-list");
+  tbody.innerHTML = "";
+  const q = filter.trim().toLowerCase();
+  const shown = jobs.filter((j) => !q || j.filename.toLowerCase().includes(q));
+  if (shown.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">No matching jobs.</td></tr>`;
+    return;
+  }
+  for (const j of shown) {
+    const tr = document.createElement("tr");
+    const checked = j.id === preselectedId ? "checked" : "";
+    tr.innerHTML =
+      `<td><input type="radio" name="restore-job" value="${esc(j.id)}" ${checked}></td>` +
+      `<td>${esc(j.filename)}</td>` +
+      `<td>${new Date(j.createdAt).toLocaleString()}</td>` +
+      `<td>${esc(j.status)}</td>`;
+    tbody.appendChild(tr);
+  }
+  syncContinueButton();
+}
+
+function selectedJobId() {
+  const r = document.querySelector('input[name="restore-job"]:checked');
+  return r ? r.value : null;
+}
+
+function syncContinueButton() {
+  $("restore-select-continue").disabled = !selectedJobId();
+}
+$("restore-job-list").addEventListener("change", syncContinueButton);
+
 async function startRestore(file) {
   $("restore-error").hidden = true;
   if (!requireDocx(file, "restore-error")) return;
   restoreShow("busy");
-  $("restore-busy-msg").textContent = `Matching ${file.name} to its job…`;
+  $("restore-busy-msg").textContent = "Loading your anonymization jobs…";
   try {
-    const job = await identify(file);
-    if (!job.hasMapping) {
-      throw new Error(`Job ${job.jobId} (${job.filename}) has no placeholder mapping — it was anonymized in ${job.status === "analyzed" ? "no" : "mask/delete"} mode and cannot be restored.`);
+    // Only jobs that were actually anonymized have a restore mapping.
+    const jobs = (await listJobs()).filter(
+      (j) => j.status === "anonymized" || j.status === "restored");
+    if (jobs.length === 0) {
+      throw new Error("No restorable jobs on the server — anonymize a document (in placeholder mode) first.");
     }
-    $("restore-busy-msg").textContent = "Building restore plan…";
-    const plan = await restorePlan(job.jobId, file);
-    restoreState = { file, jobId: job.jobId, plan };
-    $("restore-title").textContent = `${file.name} → job "${job.filename}"`;
-    renderPlan(plan);
-    restoreShow("review");
+
+    // If the document still carries its tag, pre-select that job; when the
+    // content was copy-pasted into a new document the tag is gone and the
+    // user simply picks the job themselves.
+    const tagged = await identify(file);
+    const note = $("restore-select-note");
+    if (tagged) {
+      note.className = "banner ok";
+      note.textContent = `This document identifies itself as "${tagged.filename}" — pre-selected below. Change it only if you are sure.`;
+      note.hidden = false;
+    } else {
+      note.className = "banner warn";
+      note.textContent = "This document carries no LexAnon tag (typical when content was copied into a new document). Select the job it came from.";
+      note.hidden = false;
+    }
+
+    restoreState = { file, jobs, taggedId: tagged ? tagged.jobId : null };
+    $("restore-job-filter").value = "";
+    renderJobList(jobs, "", restoreState.taggedId);
+    restoreShow("select");
   } catch (e) {
     restoreShow("pick");
     showError("restore-error", e);
   }
 }
+
+$("restore-job-filter").addEventListener("input", () => {
+  renderJobList(restoreState.jobs, $("restore-job-filter").value, selectedJobId() || restoreState.taggedId);
+});
+
+$("restore-select-cancel").addEventListener("click", () => {
+  restoreState = null;
+  $("restore-file").value = "";
+  restoreShow("pick");
+});
+
+$("restore-select-continue").addEventListener("click", async () => {
+  const jobId = selectedJobId();
+  if (!jobId) return;
+  $("restore-error").hidden = true;
+  restoreShow("busy");
+  $("restore-busy-msg").textContent = "Building restore plan…";
+  try {
+    // The server still refuses if the document is tagged with a DIFFERENT
+    // job than the one selected — that mistake reverses the wrong parties.
+    const plan = await restorePlan(jobId, restoreState.file);
+    const job = restoreState.jobs.find((j) => j.id === jobId);
+    restoreState.jobId = jobId;
+    restoreState.plan = plan;
+    $("restore-title").textContent = `${restoreState.file.name} → job "${job ? job.filename : jobId}"`;
+    renderPlan(plan);
+    restoreShow("review");
+  } catch (e) {
+    restoreShow("select");
+    showError("restore-error", e);
+  }
+});
 
 $("restore-apply").addEventListener("click", async () => {
   const btn = $("restore-apply");

@@ -94,6 +94,27 @@
     <p id="restore-busy-msg">Matching document…</p>
   </section>
 
+  <!-- Job picker: the user chooses which anonymization job this document
+       came from. Auto-matched via the embedded tag when it survived. -->
+  <section id="restore-select" hidden>
+    <div class="card">
+      <h2 id="restore-select-title">Which document is this?</h2>
+      <p class="muted">Select the anonymization job this content came from.
+        The next screen shows every substitution for review before anything
+        is changed — if you pick the wrong job here, nothing will match.</p>
+      <div id="restore-select-note"></div>
+      <input id="restore-job-filter" type="text" placeholder="Filter by file name…" autocomplete="off">
+      <table>
+        <thead><tr><th></th><th>File</th><th>Anonymized</th><th>Status</th></tr></thead>
+        <tbody id="restore-job-list"></tbody>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <button id="restore-select-cancel" class="link">Cancel</button>
+        <button id="restore-select-continue" class="primary" disabled>Continue to review</button>
+      </div>
+    </div>
+  </section>
+
   <section id="restore-review" hidden>
     <div class="card">
       <div class="row">
