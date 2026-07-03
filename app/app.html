@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LexAnon</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <img src="../icons/icon48.png" alt="" width="28" height="28">
+  <h1>LexAnon</h1>
+  <span id="conn-status" class="muted"></span>
+  <nav>
+    <button id="tab-anon" class="tab active">Anonymize</button>
+    <button id="tab-restore" class="tab">Restore</button>
+  </nav>
+</header>
+
+<!-- ── Anonymize ─────────────────────────────────────────────────────── -->
+<main id="view-anon">
+  <section id="anon-pick" class="card drop-zone">
+    <p><strong>Drop a .docx here</strong> or</p>
+    <input id="anon-file" type="file" accept=".docx">
+    <p class="muted">The document is sent only to your firm's LexAnon server,
+      analyzed there, and never leaves your network.</p>
+  </section>
+
+  <section id="anon-busy" class="card" hidden>
+    <p id="anon-busy-msg">Analyzing…</p>
+  </section>
+
+  <section id="anon-review" hidden>
+    <div id="llm-banner" class="banner" hidden></div>
+    <div class="card">
+      <div class="row">
+        <h2 id="anon-title"></h2>
+        <div>
+          <label class="inline">Mode
+            <select id="anon-mode">
+              <option value="placeholder">Placeholders ([NAME_1] — restorable)</option>
+              <option value="mask">Mask (XXXX — not restorable)</option>
+              <option value="delete">Delete (not restorable)</option>
+            </select>
+          </label>
+          <button id="anon-apply" class="primary">Anonymize &amp; download</button>
+        </div>
+      </div>
+      <p class="muted" id="anon-summary"></p>
+      <table>
+        <thead>
+          <tr><th></th><th>Category</th><th>Found text</th><th>Becomes</th><th>Source</th></tr>
+        </thead>
+        <tbody id="anon-entities"></tbody>
+      </table>
+      <button id="anon-reset" class="link">Start over with another document</button>
+    </div>
+  </section>
+
+  <div id="anon-error" class="banner error" hidden></div>
+</main>
+
+<!-- ── Restore ───────────────────────────────────────────────────────── -->
+<main id="view-restore" hidden>
+  <section id="restore-pick" class="card drop-zone">
+    <p><strong>Drop the returned .docx here</strong> or</p>
+    <input id="restore-file" type="file" accept=".docx">
+    <p class="muted">Upload the document that came back from the AI tool.
+      The server matches it to its job automatically and shows you every
+      substitution before anything is changed.</p>
+  </section>
+
+  <section id="restore-busy" class="card" hidden>
+    <p id="restore-busy-msg">Matching document…</p>
+  </section>
+
+  <section id="restore-review" hidden>
+    <div class="card">
+      <div class="row">
+        <h2 id="restore-title"></h2>
+        <button id="restore-apply" class="primary">Restore selected &amp; download</button>
+      </div>
+      <div id="restore-warnings"></div>
+      <table>
+        <thead>
+          <tr><th></th><th>Found in document</th><th>Restores to</th><th>Match</th><th>Context</th></tr>
+        </thead>
+        <tbody id="restore-occurrences"></tbody>
+      </table>
+      <div id="restore-missing" hidden>
+        <h3>Not found in this document</h3>
+        <p class="muted">These placeholders exist in the job's mapping but were
+          not found — the AI tool may have removed or rewritten them. Review
+          the document manually for these values.</p>
+        <ul id="restore-missing-list"></ul>
+      </div>
+      <button id="restore-reset" class="link">Start over with another document</button>
+    </div>
+  </section>
+
+  <div id="restore-error" class="banner error" hidden></div>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

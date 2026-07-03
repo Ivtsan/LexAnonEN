@@ -1,43 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "LexAnon EN",
-  "version": "1.1.0",
-  "description": "Local anonymization of personal data in .docx files. File never leaves the browser.",
-  "permissions": ["downloads", "storage"],
-  "host_permissions": ["http://*/*", "https://*/*"],
-  "background": {
-    "service_worker": "background.js"
-  },
+  "name": "LexAnon",
+  "version": "2.0.0",
+  "description": "Anonymize .docx documents via your firm's on-premises LexAnon server. Documents never leave your network.",
+  "permissions": ["storage"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "LexAnon EN"
+    "default_title": "LexAnon"
   },
   "icons": {
     "16":  "icons/icon16.png",
     "48":  "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
-      "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "vendor/jszip.min.js",
-        "lib/validators.js",
-        "lib/entity-finder.js",
-        "lib/replacer.js",
-        "lib/docx-parser.js",
-        "lib/llm-enhancer.js",
-        "worker/processor.js"
-      ],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

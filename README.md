@@ -1,90 +1,67 @@
-# LexAnon EN
+# LexAnon
 
-A Chrome extension for **local anonymization of personal data** in `.docx` files.  
-Files are processed entirely in the browser — no data is ever sent to any server.
-
----
-
-## Features
-
-- **Fully offline** — no servers, no cloud uploads
-- **Document language:** English (with multilingual support)
-- **17 entity categories** — from names to IBAN
-- **3 replacement modes:** placeholders (`NAME_1`), masking (`████`), deletion
-- **Exception dictionary** — words and phrases that won't be replaced
-- **Custom categories** — define your own regular expressions
-- **Mapping export** — JSON table of "original → replacement"
-- **Auto-intercept** — anonymization panel appears when any `.docx` is selected on any website
-- **Two download options:** anonymized file or file with color-highlighted entities
+Chrome extension for anonymizing personal data in `.docx` documents — the
+thin client for the on-premises **LexAnon Server**. Documents are processed
+entirely on your firm's own server and never leave your network.
 
 ---
 
-## Detected Data
+## How it works
 
-| Category | Examples |
-|---|---|
-| Full Name | Mr. John Smith, Dr. Emily Johnson |
-| Company | Acme Corp. LLC, GlobalTech Inc., Smith & Partners LLP |
-| Tax ID / EIN | 12-3456789 |
-| SSN (US) | 123-45-6789 |
-| SWIFT | BARCGB22 |
-| IBAN | GB29NWBK60161331926819 |
-| Bank Account | account numbers in standard formats |
-| Email | john.smith@example.com |
-| Phone | +1 (555) 123-4567, +44 20 7946 0958 |
-| URL | https://example.com |
-| Address | 123 Main St, New York, NY 10001; 10 Downing St, London SW1A 2AA |
-| Contract No. *(off)* | No. 123/AB-2024 |
-| Amounts *(off)* | $150,000.00, £85,000, €200,000 |
+1. Your administrator runs the LexAnon Server (a single binary) on any
+   machine inside your network.
+2. You pair this extension with the server once, using a one-time pairing
+   code from the administrator.
+3. **Anonymize:** upload a `.docx` → the server detects personal data
+   (pattern rules + a locally hosted LLM) → review every entity → download
+   the anonymized document with consistent placeholders like `[NAME_1]`.
+4. Send the anonymized document to any external AI tool.
+5. **Restore:** upload the document that comes back → the server matches it
+   to its job automatically → review every substitution (including fuzzy
+   matches where the AI tool mangled a placeholder) → download the restored
+   original.
 
----
+The placeholder→original mapping is stored encrypted on the server and is
+never exported. Nothing is ever restored without explicit human review.
+
+## Detected data
+
+Persons, companies, addresses, emails, phone numbers, SSNs, tax IDs / EINs,
+IBANs (with checksum validation), SWIFT codes, URLs, contract numbers and
+monetary amounts — plus names the server's LLM finds that pattern rules
+miss.
+
+## Failure honesty
+
+If the server's AI detection layer is disabled, fails, or partially fails,
+the extension says so prominently. Rules-only results are never passed off
+as full analysis.
 
 ## Installation
 
-1. Download or clone the repository:
-   ```bash
-   git clone https://github.com/LexProTech/LexAnonEN.git
-   ```
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable **Developer mode** (top right corner)
-4. Click **Load unpacked** and select the repository folder
+From the Chrome Web Store (soon), or unpacked:
 
----
+1. Clone this repository
+2. Open `chrome://extensions/`, enable **Developer mode**
+3. **Load unpacked** → select the repository folder
+4. Click the LexAnon toolbar icon and pair with your server
 
-## Usage
-
-1. Click the LexAnon EN icon in the Chrome toolbar
-2. Drag and drop a `.docx` file or click to select one
-3. Configure categories, replacement mode and document language
-4. Review detected entities, uncheck any you want to keep
-5. Click **Anonymize & Download**
-
----
-
-## Project Structure
+## Project structure
 
 ```
-├── manifest.json         # Extension manifest (MV3)
-├── background.js         # Service Worker
-├── content/
-│   └── content.js        # Auto-intercept script
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js          # UI logic
-├── lib/
-│   ├── entity-finder.js  # Entity detection (regex + rules)
-│   ├── validators.js     # Checksum validation (SSN, IBAN, EIN, etc.)
-│   ├── replacer.js       # Text replacement
-│   └── docx-parser.js    # .docx parsing and rebuilding
-├── worker/
-│   └── processor.js      # Web Worker for heavy processing
-├── vendor/
-│   └── jszip.min.js      # ZIP handling (.docx base)
+├── manifest.json      # MV3, storage permission only; host access is
+│                      # requested per-server at pairing time
+├── lib/api.js         # server client (pairing, jobs, restore)
+├── popup/             # toolbar popup: status + pairing
+├── app/               # full-page workflow: anonymize + restore review
 └── icons/
 ```
 
----
+## Server
+
+The server component lives in a separate repository. It is a single static
+binary (macOS / Windows / Linux) with an admin page for pairing codes and
+job management.
 
 ## License
 

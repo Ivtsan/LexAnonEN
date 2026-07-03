@@ -1,272 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LexAnon EN</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="popup.css">
+<meta charset="utf-8">
+<link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <header>
+    <img src="../icons/icon48.png" alt="" width="24" height="24">
+    <h1>LexAnon</h1>
+  </header>
 
-<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
-<header class="app-header">
-  <div class="header-left">
-    <div class="header-logo">
-      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="28" height="28" rx="8" fill="white" fill-opacity="0.2"/>
-        <path d="M8 7h7l5 5v9a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M15 7v5h5" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-        <line x1="10" y1="14" x2="18" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="10" y1="17" x2="16" y2="17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
+  <!-- Connected state -->
+  <section id="view-connected" hidden>
+    <div class="status-row">
+      <span class="dot" id="server-dot"></span>
+      <span id="server-status">Checking server…</span>
     </div>
-    <div>
-      <div class="header-title">LexAnon EN</div>
-      <div class="header-sub">Local · file never leaves your network</div>
+    <div class="status-row">
+      <span class="dot" id="llm-dot"></span>
+      <span id="llm-status">Checking LLM…</span>
     </div>
-  </div>
-  <div class="privacy-badge">
-    <svg width="9" height="10" viewBox="0 0 9 10" fill="none">
-      <rect x="1" y="4" width="7" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-      <path d="M2.5 4V3a2 2 0 0 1 4 0v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>
-    Offline
-  </div>
-</header>
-
-<!-- ── MAIN CONTENT ────────────────────────────────────────────────────── -->
-<main class="app-main">
-
-  <!-- File upload zone -->
-  <section id="upload-section">
-    <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Upload .docx file">
-      <input type="file" id="file-input" accept=".docx" hidden>
-      <div class="drop-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-      </div>
-      <div class="drop-label">Drop .docx here</div>
-      <div class="drop-sub">or click to choose a file</div>
-    </div>
-
-    <!-- Settings panel -->
-    <details id="settings-panel" class="settings-panel" open>
-      <summary class="settings-toggle">Search settings</summary>
-      <div class="settings-body">
-
-        <!-- Categories -->
-        <div class="settings-section-label">Entity categories</div>
-        <div class="category-grid" id="category-grid">
-          <!-- generated in popup.js -->
-        </div>
-
-        <!-- Replacement mode -->
-        <div class="settings-section-label" style="margin-top:14px">Replacement mode</div>
-        <div class="mode-row">
-          <label class="mode-btn active" data-mode="placeholder">
-            <input type="radio" name="mode" value="placeholder" checked>
-            <span class="mode-icon">🏷</span>
-            <span>Placeholders</span>
-          </label>
-          <label class="mode-btn" data-mode="mask">
-            <input type="radio" name="mode" value="mask">
-            <span class="mode-icon">█</span>
-            <span>Mask</span>
-          </label>
-          <label class="mode-btn" data-mode="delete">
-            <input type="radio" name="mode" value="delete">
-            <span class="mode-icon">✕</span>
-            <span>Delete</span>
-          </label>
-        </div>
-
-        <!-- Export mapping -->
-        <label class="checkbox-row" style="margin-top:12px">
-          <input type="checkbox" id="export-mapping">
-          <span>Export mapping (JSON)</span>
-        </label>
-      </div>
-    </details>
-
-    <!-- Exclusion dictionary -->
-    <details id="dictionary-panel" class="settings-panel">
-      <summary class="settings-toggle">Exclusion dictionary</summary>
-      <div class="settings-body">
-        <div class="settings-section-label">Words and phrases that will not be replaced</div>
-        <div class="dict-input-row">
-          <input type="text" id="dict-input" class="dict-text-input" placeholder="Add a word or phrase…" spellcheck="false">
-          <button class="btn-ghost btn-sm" id="dict-add">Add</button>
-        </div>
-        <div id="dict-list" class="dict-list"></div>
-      </div>
-    </details>
-
-    <!-- Custom categories -->
-    <details id="custom-cat-panel" class="settings-panel">
-      <summary class="settings-toggle">Custom categories</summary>
-      <div class="settings-body">
-        <div class="settings-section-label">Add a new category</div>
-        <div class="custom-cat-form">
-          <div class="custom-cat-row">
-            <input type="text" id="ccat-label" class="dict-text-input" placeholder="Name (e.g. Code word)">
-            <input type="text" id="ccat-placeholder" class="dict-text-input ccat-ph-input" placeholder="LABEL">
-          </div>
-          <div class="custom-cat-row">
-            <input type="text" id="ccat-pattern" class="dict-text-input" placeholder="Regular expression (e.g. Project\s+\w+)" spellcheck="false">
-          </div>
-          <div class="custom-cat-actions">
-            <label class="ccat-color-label">
-              <span>Color:</span>
-              <input type="color" id="ccat-color" value="#8B5CF6" class="ccat-color-input">
-            </label>
-            <button class="btn-ghost btn-sm" id="ccat-add">+ Add category</button>
-          </div>
-        </div>
-        <div id="custom-cat-list" class="custom-cat-list"></div>
-      </div>
-    </details>
-
-    <!-- LLM Enhancement -->
-    <details id="llm-panel" class="settings-panel">
-      <summary class="settings-toggle">LLM Enhancement</summary>
-      <div class="settings-body">
-        <div class="settings-section-label">Local LLM server (Ollama)</div>
-        <p class="llm-desc">Connect to your firm's internal LLM server to detect entities that regex rules miss. All data stays within your network.</p>
-
-        <label class="checkbox-row llm-enable-row">
-          <input type="checkbox" id="llm-enabled">
-          <span>Enable LLM-enhanced detection</span>
-        </label>
-
-        <div id="llm-fields" class="llm-fields hidden">
-          <div class="llm-field-row">
-            <label class="llm-label" for="llm-url">Server URL</label>
-            <input type="text" id="llm-url" class="dict-text-input" placeholder="http://llm-server.internal:11434" spellcheck="false">
-          </div>
-
-          <div class="llm-field-row">
-            <label class="llm-label" for="llm-model">Model</label>
-            <div class="llm-model-row">
-              <input type="text" id="llm-model" class="dict-text-input" placeholder="llama3.1:8b" spellcheck="false">
-              <button class="btn-ghost btn-sm" id="llm-fetch-models" title="Fetch available models from server">Fetch</button>
-            </div>
-          </div>
-
-          <div class="llm-status-row">
-            <button class="btn-ghost btn-sm" id="llm-test">Test connection</button>
-            <span class="llm-status" id="llm-status"></span>
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <!-- Auto-intercept toggle -->
-    <div class="intercept-row">
-      <div class="intercept-info">
-        <div class="intercept-title">Intercept uploads</div>
-        <div class="intercept-sub">Show anonymisation panel when a .docx is selected on any site</div>
-      </div>
-      <label class="toggle" title="Enable / disable auto-intercept">
-        <input type="checkbox" id="auto-intercept">
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      </label>
-    </div>
+    <button id="open-app" class="primary">Open LexAnon</button>
+    <button id="unpair" class="link">Disconnect from this server</button>
   </section>
 
-  <!-- Progress -->
-  <section id="progress-section" class="hidden">
-    <div class="progress-label" id="progress-label">Processing…</div>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
-    </div>
+  <!-- Pairing state -->
+  <section id="view-pair" hidden>
+    <p class="muted">Connect to your firm's LexAnon server. Ask your
+      administrator for the server address and a pairing code.</p>
+    <label>Server address
+      <input id="server-url" type="text" placeholder="https://192.168.1.10:8090" autocomplete="off">
+    </label>
+    <label>Pairing code
+      <input id="pair-code" type="text" placeholder="8-digit code" autocomplete="off" inputmode="numeric">
+    </label>
+    <label>This computer's name
+      <input id="client-name" type="text" placeholder="e.g. Dan's laptop" autocomplete="off">
+    </label>
+    <button id="pair-btn" class="primary">Pair</button>
+    <div id="pair-error" class="error" hidden></div>
   </section>
 
-  <!-- Entity preview -->
-  <section id="preview-section" class="hidden">
-    <div class="preview-header">
-      <div class="preview-stats" id="preview-stats"></div>
-      <div class="preview-actions">
-        <button class="btn-ghost btn-sm" id="btn-select-all">All</button>
-        <button class="btn-ghost btn-sm" id="btn-deselect-all">None</button>
-        <button class="btn-ghost btn-sm" id="btn-another">Other file</button>
-      </div>
-    </div>
-
-    <!-- Category filter -->
-    <div class="filter-row" id="filter-row">
-      <span class="filter-label">Filter:</span>
-      <button class="filter-btn active" data-filter="ALL">All</button>
-      <!-- additional buttons generated dynamically -->
-    </div>
-
-    <div class="table-wrap">
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th class="col-check"><input type="checkbox" id="check-all-header" checked title="Select all"></th>
-            <th class="col-value">Found text</th>
-            <th class="col-cat">Category</th>
-            <th class="col-repl">Replacement</th>
-          </tr>
-        </thead>
-        <tbody id="preview-tbody"></tbody>
-      </table>
-    </div>
-
-    <div class="download-bar">
-      <button class="btn-ghost" id="btn-markup">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
-          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-        Download with markup
-      </button>
-      <button class="btn-primary" id="btn-download">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Anonymize &amp; download
-      </button>
-    </div>
-  </section>
-
-  <!-- Done state -->
-  <section id="done-section" class="hidden center-section">
-    <div class="done-icon-wrap">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#34C759" fill-opacity="0.15"/>
-        <circle cx="20" cy="20" r="14" fill="#34C759"/>
-        <path d="M13 20.5l5 5 9-9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <div class="done-title">File saved</div>
-    <div class="done-sub" id="done-sub"></div>
-    <button class="btn-primary" id="btn-restart" style="margin-top:20px">Process another file</button>
-  </section>
-
-  <!-- Error state -->
-  <section id="error-section" class="hidden center-section">
-    <div class="done-icon-wrap">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#FF3B30" fill-opacity="0.12"/>
-        <circle cx="20" cy="20" r="14" fill="#FF3B30"/>
-        <path d="M20 13v8M20 25v2" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div class="done-title">Error</div>
-    <div class="done-sub" id="error-message"></div>
-    <button class="btn-primary" id="btn-error-restart" style="margin-top:20px">Try again</button>
-  </section>
-
-</main>
-
-<script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
