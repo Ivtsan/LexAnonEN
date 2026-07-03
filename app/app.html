@@ -16,6 +16,27 @@
   </nav>
 </header>
 
+<!-- ── Pairing / setup ───────────────────────────────────────────────── -->
+<main id="view-setup" hidden>
+  <section class="card narrow">
+    <h2>Connect to your LexAnon server</h2>
+    <p class="muted">Ask your administrator for the server address and a
+      one-time pairing code (they generate it on the server's admin page).</p>
+    <label>Server address
+      <input id="server-url" type="text" placeholder="https://192.168.1.10:8090" autocomplete="off">
+    </label>
+    <label>Pairing code
+      <input id="pair-code" type="text" placeholder="8-digit code" autocomplete="off" inputmode="numeric">
+    </label>
+    <label>This computer's name
+      <input id="client-name" type="text" placeholder="e.g. Dan's laptop" autocomplete="off">
+    </label>
+    <button id="pair-btn" class="primary">Pair</button>
+    <div id="pair-error" class="banner error" hidden></div>
+    <div id="pair-success" class="banner ok" hidden></div>
+  </section>
+</main>
+
 <!-- ── Anonymize ─────────────────────────────────────────────────────── -->
 <main id="view-anon">
   <section id="anon-pick" class="card drop-zone">

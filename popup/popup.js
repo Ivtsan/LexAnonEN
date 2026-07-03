@@ -1,9 +1,8 @@
-// popup.js — connection status + pairing. The actual workflow lives in the
-// full-page app (app/app.html); the popup is deliberately minimal.
+// popup.js — connection status only. Pairing lives in the full-tab app:
+// Chrome closes this popup the moment it loses focus (which the
+// chrome.permissions.request prompt forces), so forms here lose state.
 
-import {
-  getSettings, clearPairing, normalizeServerUrl, ping, pair, llmHealth,
-} from "../lib/api.js";
+import { getSettings, clearPairing, ping, llmHealth } from "../lib/api.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,6 +13,11 @@ function show(viewId) {
 
 function setDot(id, state) {
   $(id).className = "dot " + state;
+}
+
+function openApp(hash) {
+  chrome.tabs.create({ url: chrome.runtime.getURL("app/app.html" + (hash || "")) });
+  window.close();
 }
 
 async function refreshConnected() {
@@ -46,47 +50,17 @@ async function refreshConnected() {
 }
 
 async function init() {
-  const { serverUrl, token, clientName } = await getSettings();
+  const { serverUrl, token } = await getSettings();
   if (serverUrl && token) {
     show("view-connected");
     refreshConnected();
   } else {
     show("view-pair");
-    if (serverUrl) $("server-url").value = serverUrl;
-    if (clientName) $("client-name").value = clientName;
   }
 }
 
-$("pair-btn").addEventListener("click", async () => {
-  const errBox = $("pair-error");
-  errBox.hidden = true;
-  const btn = $("pair-btn");
-  btn.disabled = true;
-  try {
-    const serverUrl = normalizeServerUrl($("server-url").value);
-    const code = $("pair-code").value.trim();
-    if (!code) throw new Error("Enter the pairing code from your administrator");
-    const clientName = $("client-name").value.trim() || "unnamed client";
-
-    // Ask Chrome for permission to talk to this specific origin only.
-    const granted = await chrome.permissions.request({ origins: [serverUrl + "/*"] });
-    if (!granted) throw new Error("Chrome permission to contact the server was declined");
-
-    await pair(serverUrl, code, clientName);
-    show("view-connected");
-    refreshConnected();
-  } catch (e) {
-    errBox.textContent = e.message;
-    errBox.hidden = false;
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-$("open-app").addEventListener("click", () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("app/app.html") });
-  window.close();
-});
+$("open-setup").addEventListener("click", () => openApp("#pair"));
+$("open-app").addEventListener("click", () => openApp(""));
 
 $("unpair").addEventListener("click", async () => {
   await clearPairing();

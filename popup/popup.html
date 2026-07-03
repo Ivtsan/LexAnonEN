@@ -24,21 +24,11 @@
     <button id="unpair" class="link">Disconnect from this server</button>
   </section>
 
-  <!-- Pairing state -->
+  <!-- Not paired: setup happens in a full tab, because Chrome closes this
+       popup whenever it loses focus (e.g. during the permission prompt). -->
   <section id="view-pair" hidden>
-    <p class="muted">Connect to your firm's LexAnon server. Ask your
-      administrator for the server address and a pairing code.</p>
-    <label>Server address
-      <input id="server-url" type="text" placeholder="https://192.168.1.10:8090" autocomplete="off">
-    </label>
-    <label>Pairing code
-      <input id="pair-code" type="text" placeholder="8-digit code" autocomplete="off" inputmode="numeric">
-    </label>
-    <label>This computer's name
-      <input id="client-name" type="text" placeholder="e.g. Dan's laptop" autocomplete="off">
-    </label>
-    <button id="pair-btn" class="primary">Pair</button>
-    <div id="pair-error" class="error" hidden></div>
+    <p class="muted">Not connected to a LexAnon server yet.</p>
+    <button id="open-setup" class="primary">Set up connection</button>
   </section>
 
   <script type="module" src="popup.js"></script>

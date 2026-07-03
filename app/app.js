@@ -5,7 +5,7 @@
 //            substitution → apply only what the reviewer accepted → download.
 
 import {
-  getSettings, ping, analyze, applyAndDownload,
+  getSettings, ping, pair, normalizeServerUrl, analyze, applyAndDownload,
   identify, restorePlan, restoreApplyAndDownload,
 } from "../lib/api.js";
 
@@ -31,6 +31,7 @@ function showError(boxId, err) {
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
 function switchTab(name) {
+  $("view-setup").hidden = name !== "setup";
   $("view-anon").hidden = name !== "anon";
   $("view-restore").hidden = name !== "restore";
   $("tab-anon").classList.toggle("active", name === "anon");
@@ -294,6 +295,52 @@ $("restore-reset").addEventListener("click", () => {
 
 wireDropZone("restore-pick", "restore-file", startRestore);
 
+// ══ Pairing / setup ═══════════════════════════════════════════════════════
+
+$("pair-btn").addEventListener("click", async () => {
+  const errBox = $("pair-error");
+  const okBox = $("pair-success");
+  errBox.hidden = okBox.hidden = true;
+  const btn = $("pair-btn");
+  btn.disabled = true;
+  try {
+    const serverUrl = normalizeServerUrl($("server-url").value);
+    const code = $("pair-code").value.trim();
+    if (!code) throw new Error("Enter the pairing code from your administrator");
+    const clientName = $("client-name").value.trim() || "unnamed client";
+
+    // Ask Chrome for permission to talk to this specific origin only.
+    const granted = await chrome.permissions.request({ origins: [serverUrl + "/*"] });
+    if (!granted) throw new Error("Chrome permission to contact the server was declined");
+
+    await pair(serverUrl, code, clientName);
+    okBox.textContent = `Paired with ${serverUrl}.`;
+    okBox.hidden = false;
+    setTimeout(() => {
+      switchTab("anon");
+      checkConnection();
+    }, 800);
+  } catch (e) {
+    errBox.textContent = e.message;
+    errBox.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────
 
-checkConnection();
+async function init() {
+  const { serverUrl, token } = await getSettings();
+  if (!serverUrl || !token || location.hash === "#pair") {
+    if (serverUrl) $("server-url").value = serverUrl;
+    getSettings().then(({ clientName }) => {
+      if (clientName) $("client-name").value = clientName;
+    });
+    switchTab("setup");
+    return;
+  }
+  checkConnection();
+}
+
+init();
