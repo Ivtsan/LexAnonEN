@@ -40,8 +40,11 @@
 <!-- ── Anonymize ─────────────────────────────────────────────────────── -->
 <main id="view-anon">
   <section id="anon-pick" class="card drop-zone">
-    <p><strong>Drop a .docx here</strong> or</p>
-    <input id="anon-file" type="file" accept=".docx">
+    <p><strong>Drop a .docx, .txt, .pdf, or .doc here</strong> or</p>
+    <input id="anon-file" type="file" accept=".docx,.txt,.pdf,.doc">
+    <p class="muted">PDF: the text layer is extracted and the anonymized
+      result is delivered as .txt (PDFs cannot be edited in place).
+      Scanned PDFs need OCR first.</p>
     <p class="muted">The document is sent only to your firm's LexAnon server,
       analyzed there, and never leaves your network.</p>
   </section>
@@ -51,7 +54,12 @@
   </section>
 
   <section id="anon-review" hidden>
+    <div id="anon-warnings"></div>
     <div id="llm-banner" class="banner" hidden></div>
+    <!-- Post-anonymization verification: filled in after "Anonymize &
+         download", when the server's second AI pass over the anonymized
+         output completes. -->
+    <div id="verify-banner" class="banner" hidden></div>
     <div class="card">
       <div class="row">
         <h2 id="anon-title"></h2>
@@ -83,8 +91,8 @@
 <!-- ── Restore ───────────────────────────────────────────────────────── -->
 <main id="view-restore" hidden>
   <section id="restore-pick" class="card drop-zone">
-    <p><strong>Drop the returned .docx here</strong> or</p>
-    <input id="restore-file" type="file" accept=".docx">
+    <p><strong>Drop the returned .docx or .txt here</strong> or</p>
+    <input id="restore-file" type="file" accept=".docx,.txt">
     <p class="muted">Upload the document that came back from the AI tool.
       The server matches it to its job automatically and shows you every
       substitution before anything is changed.</p>
