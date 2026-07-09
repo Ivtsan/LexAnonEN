@@ -1,10 +1,41 @@
 {
   "manifest_version": 3,
   "name": "LexAnon",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Anonymize .docx documents via your firm's on-premises LexAnon server. Documents never leave your network.",
   "permissions": ["storage"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://aistudio.google.com/*",
+        "https://notebooklm.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://poe.com/*",
+        "https://chat.deepseek.com/*",
+        "https://grok.com/*",
+        "https://chat.mistral.ai/*",
+        "https://huggingface.co/chat/*",
+        "https://*.meta.ai/*",
+        "https://you.com/*",
+        "https://chat.qwen.ai/*",
+        "https://kimi.com/*",
+        "https://www.kimi.com/*"
+      ],
+      "js": ["content/intercept.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "LexAnon"

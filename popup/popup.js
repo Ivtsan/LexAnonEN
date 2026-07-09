@@ -59,6 +59,15 @@ async function init() {
   }
 }
 
+// Upload-intercept toggle: content scripts on the allowlisted AI chat
+// sites watch this key and enable/disable themselves live.
+chrome.storage.local.get(["interceptEnabled"], (d) => {
+  $("intercept-toggle").checked = d.interceptEnabled !== false; // default on
+});
+$("intercept-toggle").addEventListener("change", (e) => {
+  chrome.storage.local.set({ interceptEnabled: e.target.checked });
+});
+
 $("open-setup").addEventListener("click", () => openApp("#pair"));
 $("open-app").addEventListener("click", () => openApp(""));
 

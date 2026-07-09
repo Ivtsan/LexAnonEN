@@ -52,3 +52,9 @@ button.link {
   margin-top: 10px; padding: 8px 10px; border-radius: 7px;
   background: #fef2f2; color: var(--bad); font-size: 12.5px; line-height: 1.4;
 }
+
+.toggle-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--text, #202124); margin: 10px 0 2px;
+}
+.toggle-row input { display: inline-block; width: auto; margin: 0; }

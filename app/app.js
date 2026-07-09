@@ -14,7 +14,7 @@ const $ = (id) => document.getElementById(id);
 const CATEGORY_LABELS = {
   PERSON: "Person", COMPANY: "Company", ADDRESS: "Address", EMAIL: "Email",
   PHONE: "Phone", SSN: "SSN", TAXID: "Tax ID", IBAN: "IBAN", SWIFT: "SWIFT",
-  URL: "URL", CONTRACT: "Contract no.", AMOUNT: "Amount",
+  URL: "URL", CONTRACT: "Contract no.", AMOUNT: "Amount", CUSTOM: "Custom",
 };
 
 function esc(s) {
@@ -183,7 +183,12 @@ async function startAnalyze(file) {
   anonShow("busy");
   $("anon-busy-msg").textContent = `Analyzing ${file.name} on the server…`;
   try {
-    const res = await analyze(file, busyProgress("anon-busy-msg", `Analyzing ${file.name}…`));
+    // Free-text "anything specific you want to redact" — persisted so the
+    // intercept panel and this page share the same last-used value.
+    const instructions = $("anon-instructions").value.trim();
+    chrome.storage.local.set({ redactInstructions: instructions });
+    const res = await analyze(file, busyProgress("anon-busy-msg", `Analyzing ${file.name}…`),
+      instructions ? { instructions } : {});
     anonState = { file, jobId: res.jobId, entities: res.entities || [] };
     $("anon-title").textContent = file.name;
     $("anon-summary").textContent =
@@ -544,6 +549,9 @@ $("pair-btn").addEventListener("click", async () => {
 // ── Init ──────────────────────────────────────────────────────────────────
 
 async function init() {
+  chrome.storage.local.get(["redactInstructions"], (d) => {
+    if (d.redactInstructions) $("anon-instructions").value = d.redactInstructions;
+  });
   const { serverUrl, token } = await getSettings();
   if (!serverUrl || !token || location.hash === "#pair") {
     if (serverUrl) $("server-url").value = serverUrl;

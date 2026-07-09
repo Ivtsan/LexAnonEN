@@ -107,3 +107,15 @@ tr.llm { background: #ecfdf5; }
 
 ul { padding-left: 20px; font-size: 13.5px; }
 li { margin-bottom: 4px; }
+
+/* "Anything specific you want to redact?" box on the anonymize drop card */
+.instructions-label {
+  display: block; text-align: left; font-size: 12.5px;
+  color: var(--muted); margin: 14px auto 0; max-width: 560px;
+}
+.instructions-label textarea {
+  display: block; width: 100%; margin-top: 5px; padding: 7px 9px;
+  font-size: 13px; font-family: inherit; resize: vertical;
+  border: 1px solid var(--border); border-radius: 7px;
+}
+.instructions-label textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
